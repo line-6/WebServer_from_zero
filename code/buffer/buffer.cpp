@@ -6,7 +6,7 @@
 Buffer::Buffer(int initBufferSize):buffer_(initBufferSize), 
             readPos_(0), writePos_(0) {}
 
-size_t Buffer::WriteableBytes() const {
+size_t Buffer::WritableBytes() const {
     return buffer_.size() - writePos_;
 }
 
@@ -20,7 +20,7 @@ size_t Buffer::PrependBytes() const {
 
 void Buffer::MakeSpace_(size_t len) {
     // 扩容
-    if (WriteableBytes() + PrependBytes() < len) {
+    if (WritableBytes() + PrependBytes() < len) {
         buffer_.resize(writePos_ + len + 1);
     }
     // 搬移
@@ -38,10 +38,10 @@ void Buffer::EnsureWriteable(size_t len) {
     // 被读过的位置，可以让后面的数据位置总体前移
     // readPos_ -> 0, writePos_ -> writePos_ - readPos_
     // 若是移动后容量仍不够，再考虑真正的resize
-    if (WriteableBytes() < len) {
+    if (WritableBytes() < len) {
         MakeSpace_(len);
     }
-    assert(WriteableBytes() >= len);
+    assert(WritableBytes() >= len);
 }
 
 void Buffer::HasWritten(size_t len) {
@@ -77,6 +77,10 @@ void Buffer::Append(const char *str, size_t len) {
     HasWritten(len);
 }
 
+void Buffer::Append(const std::string& str) {
+    Append(str.data(), str.length());
+}
+
 /*
 最大程度减少系统调用（read）的次数：
 构造两个 iovec -> iovec[0] 指向buffer的空闲区域 -> iovec[1] 指向一个临时分配的栈上数组 ->
@@ -85,7 +89,7 @@ readv 读取 fd（只需调用一次readv） -> 数据读入iovec -> iovec[1] �
 ssize_t Buffer::ReadFd(int fd, int* Errno) {
     char temp_buf[65535];
     struct iovec iov[2];
-    const size_t writeable = WriteableBytes();
+    const size_t writeable = WritableBytes();
 
     iov[0].iov_base = WritePtr();
     iov[0].iov_len = writeable;

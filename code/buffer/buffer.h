@@ -19,7 +19,7 @@ public:
     Buffer(int initBufferSize = 1024);
     ~Buffer() = default;
 
-    size_t WriteableBytes() const;
+    size_t WritableBytes() const;
     size_t ReadableBytes() const;
     size_t PrependBytes() const;
 
@@ -35,6 +35,7 @@ public:
     std::string RetrieveAllToStr();
 
     void Append(const char* str, size_t len);
+    void Append(const std::string& str);
 
     ssize_t ReadFd(int fd, int* Errno);
     ssize_t WriteFd(int fd, int* Errno);
