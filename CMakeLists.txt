@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 project(WebServer_from_zero)
 
 set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -Wall -O2")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -pthread -Wall -O2")
 
 set(CMAKE_EXPORT_COMPILECOMMANDS ON)
 
@@ -15,6 +15,13 @@ include_directories(${PROJECT_SOURCE_DIR}/code)
 # --- 阶段性测试: Buffer 模块 ---
 add_executable(test_buffer 
     test/test_buffer.cpp 
+    code/buffer/buffer.cpp
+)
+
+# --- 阶段性测试: Log 模块 ---
+add_executable(test_log
+    test/test_log.cpp 
+    code/log/log.cpp
     code/buffer/buffer.cpp
 )
 

@@ -91,7 +91,7 @@ void Log::write(int level, const char *format, ...) {
     va_list vaList;
 
     /*日志日期 日志行数*/
-    if (toDay_ != t.tm_mday || (lineCount_ && (lineCount_ % MAX_LINES_ == 0))) {
+    if (toDay_ != t.tm_mday || (lineCount_ && (lineCount_ % MAX_LINES == 0))) {
         std::unique_lock<std::mutex> locker(mtx_);
         locker.unlock();
 
