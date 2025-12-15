@@ -100,9 +100,8 @@ size_t BlockDeque<T>::capacity() {
 template<class T>
 void BlockDeque<T>::push_back(const T &item) {
     std::unique_lock<std::mutex> locker(mtx_);
-    while(deque_.size() >= capacity_) {
-        condProducer_.wait(locker);
-    }
+    // 队列若满（由lambda表达式控制），生产者等待
+    condProducer_.wait(locker, [this] {return deque_.size() < capacity_;});
     deque_.push_back(item);
     condConsumer_.notify_one();
 }
@@ -110,9 +109,8 @@ void BlockDeque<T>::push_back(const T &item) {
 template<class T>
 void BlockDeque<T>::push_front(const T &item) {
     std::unique_lock<std::mutex> locker(mtx_);
-    while(deque_.size() >= capacity_) {
-        condProducer_.wait(locker);
-    }
+    // 队列满，生产者等待
+    condProducer_.wait(locker, [this] {return deque_.size() < capacity_;});
     deque_.push_front(item);
     condConsumer_.notify_one();
 }
@@ -132,6 +130,7 @@ bool BlockDeque<T>::full() {
 template<class T>
 bool BlockDeque<T>::pop(T &item) {
     std::unique_lock<std::mutex> locker(mtx_);
+    // 队列空，消费者等待
     while(deque_.empty()) {
         condConsumer_.wait(locker);
         if (isClose_) {
@@ -147,9 +146,11 @@ bool BlockDeque<T>::pop(T &item) {
 template<class T>
 bool BlockDeque<T>::pop(T &item, int timeout) {
     std::unique_lock<std::mutex> locker(mtx_);
+    // 队列空，消费者等待
     while(deque_.empty()) {
         if (condConsumer_.wait_for(locker, std::chrono::seconds(timeout)) 
             == std::cv_status::timeout) {
+                // 如果等待超时
                 return false;
             }
         if (isClose_) {

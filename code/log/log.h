@@ -11,6 +11,13 @@
 #include "blockqueue.h"
 #include "../buffer/buffer.h"
 
+/*
+┌──────────────┐         ┌──────────────┐         ┌──────────────┐
+│  业务线程     │  push   │  BlockDeque  │  pop    │  写日志线程   │  write   │  文件
+│ (生产者)      │ ──────> │  (缓冲区)    │ ──────> │ (消费者)      │ ──────> │
+└──────────────┘         └──────────────┘         └──────────────┘
+*/
+
 class Log {
 private:
     Log();
@@ -44,19 +51,19 @@ private:
 
     int MAX_LINES_;
 
-    int lineCount_;
-    int toDay_;
+    int lineCount_; // 当前文件行数
+    int toDay_; // 当前天数
 
     bool isOpen_;
 
-    Buffer buff_;   
+    Buffer buff_;   // 用于格式化日志内容的缓冲区
     int level_;
-    bool isAsync_;
+    bool isAsync_;  // 是否异步模式
 
-    FILE* fp_;
+    FILE* fp_;  // 指向当前的 .log 文件
 
     std::unique_ptr<BlockDeque<std::string>> deque_;
-    std::unique_ptr<std::thread> writeThread_;
+    std::unique_ptr<std::thread> writeThread_;  // 后台写线程
     std::mutex mtx_;
 }; 
 
