@@ -27,13 +27,26 @@ server->client:
                               v
 [客户端] <--- [网络] <-------+
 ```
+运行：  
+```
+mkdir build && cd build
+cmake ..
+make
+./bin/test_buffer
+```
 ### Step 2.日志系统 (Log): 实现同步/异步日志。 
 ```
 │  业务线程(生产者) │  ──>  [BlockDeque]  ──>  │  写日志线程(消费者) │  ──>  文件
 1. BlockDeque（阻塞队列）- 线程安全的队列容器
 2. Log（日志类）- 单例模式，封装日志写入逻辑
+```
+运行：  
+```
+cd build
+cmake ..
+make
+./bin/test_log
 ``` 
-
 ### Step 3.池 (Pool):  
 1. 线程池 (ThreadPool): 管理工作线程，处理高并发任务。  
 2. 数据库连接池 (SqlConnPool): 复用 MySQL 连接 (RAII)。  
