@@ -49,11 +49,17 @@ make
 ``` 
 ### Step 3.池 (Pool):  
 1. 线程池 (ThreadPool): 管理工作线程，处理高并发任务。  
-2. 数据库连接池 (SqlConnPool): 复用 MySQL 连接 (RAII)。  
+运行：  
+```
+cd build
+cmake ..
+make
+./bin/test_log_threadpool
+``` 
 
 ### Step 4.核心组件 (Core Components):  
-1. 定时器 (Timer): 基于小根堆管理超时连接。  
-2. Epoll 封装: 管理文件描述符事件。  
+1. timer: 定时器, 基于小根堆管理超时连接。  
+2. server: Epoll 封装, 管理文件描述符事件。  
 
 ### Step 5.HTTP 协议栈 (Http):  
 1. 解析 HTTP 请求 (状态机)。  
