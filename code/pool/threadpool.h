@@ -59,6 +59,7 @@ private:
         std::condition_variable cv_;
         bool isClosed;
         std::queue<std::function<void()>> tasks;
+        int a;
     };
     std::shared_ptr<Pool> pool_;
 };

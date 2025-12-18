@@ -25,6 +25,13 @@ add_executable(test_log
     code/buffer/buffer.cpp
 )
 
+# --- 阶段性测试: Log_threadpool 模块 ---
+add_executable(test_log_threadpool
+    test/test_log_threadpool.cpp 
+    code/log/log.cpp
+    code/buffer/buffer.cpp
+)
+
 # --- 最终目标 (暂时注释，待后续阶段开启) ---
 # file(GLOB_RECURSE SRC_FILES code/*.cpp)
 # add_executable(server ${SRC_FILES})
