@@ -32,6 +32,12 @@ add_executable(test_log_threadpool
     code/buffer/buffer.cpp
 )
 
+# --- 阶段性测试: Timer 模块 ---
+add_executable(test_timer
+    test/test_timer.cpp 
+    code/timer/heaptimer.cpp
+)
+
 # --- 最终目标 (暂时注释，待后续阶段开启) ---
 # file(GLOB_RECURSE SRC_FILES code/*.cpp)
 # add_executable(server ${SRC_FILES})

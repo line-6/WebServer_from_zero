@@ -91,7 +91,7 @@ void HeapTimer::del_(size_t idx) {
 void HeapTimer::siftUp_(size_t idx) {
     assert(idx >= 0 && idx < heap_.size());
     size_t j = (idx - 1) / 2;   // idx 对应的父节点
-    while (j >= 0) {
+    while (j >= 0 && idx > 0) { // 这里不加 idx > 0，当idx = 0 时报错
         if (heap_[j] < heap_[idx]) break;
         swapNode_(idx, j);
         idx = j;
