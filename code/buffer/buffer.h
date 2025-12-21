@@ -25,6 +25,7 @@ public:
 
     const char* ReadPtr() const {return BeginPtr_() + readPos_;}
     char* WritePtr() { return BeginPtr_() + writePos_; }
+    const char* WritePtrConst() { return BeginPtr_() + writePos_; }
 
     void EnsureWriteable(size_t len);
     void HasWritten(size_t len);
