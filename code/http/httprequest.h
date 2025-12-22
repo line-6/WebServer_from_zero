@@ -10,6 +10,8 @@
 
 #include "../buffer/buffer.h"
 #include "../log/log.h"
+#include "../pool/sqlconnpool.h"
+#include "../pool/sqlconnRAII.h"
 
 
 class HttpRequest {
@@ -39,14 +41,13 @@ public:
     bool parse(Buffer& buffer);
 
     // TODO
-    // std::string path() const;
-    // std::string& path();
-    // std::string method() const;
-    // std::string version() const;
-    // std::string GetPost(const std::string& key) const;
-    // std::string GetPost(const char* key) const;
+    std::string path() const {return path_;}
+    std::string method() const {return method_;}
+    std::string version() const {return version_;}
+    std::string GetPost(const std::string& key) const;
+    std::string GetPost(const char* key) const;
 
-    // bool IsKeepAlive() const;
+    bool IsKeepAlive() const;
 
 private:
     bool parseRequestLine_(const std::string& line);

@@ -1,4 +1,7 @@
 #include "httprequest.h"
+#include "pool/sqlconnRAII.h"
+#include "pool/sqlconnpool.h"
+#include <mysql/mysql.h>
 
 const std::unordered_set<std::string> HttpRequest::DEFAULT_HTML{
     "/index", "/register", "/login", "welcome",
@@ -15,6 +18,27 @@ void HttpRequest::init() {
     state_ = REQUEST_LINE;
     header_.clear();
     post_.clear();
+}
+
+std::string HttpRequest::GetPost(const std::string& key) const {
+    assert(key != "");
+    if(post_.count(key) == 1) {
+        return post_.find(key)->second;
+    }
+    return "";
+}
+std::string HttpRequest::GetPost(const char* key) const {
+    assert(key != nullptr);
+    if(post_.count(key) == 1) {
+        return post_.find(key)->second;
+    }
+    return "";
+}
+
+bool HttpRequest::IsKeepAlive() const {
+    if(header_.count("Connection") == 1) {
+        return header_.find("Connection")->second == "keep-alive" && version_ == "1.1";
+    }
 }
 
 bool HttpRequest::parse(Buffer& buffer) {
@@ -174,7 +198,64 @@ void HttpRequest::parseFromUrlencoded_() {
 
 bool HttpRequest::userVerify(const std::string& name, 
                         const std::string& pwd, bool isLogin) {
-                            
+    if(name == "" || pwd == "") { return false; }
+    LOG_INFO("Verify User, name:%s pwd:%s", name.c_str(), pwd.c_str());  
+
+    SqlConnRAII raii(SqlConnPool::Instance());
+    MYSQL* sql = raii.get();
+    assert(sql);
+
+    bool flag = false;  // return value
+    char order[256] = { 0 };    // mysql 语句
+    MYSQL_RES *res = nullptr;   // 储存查询结果
+
+    if (!isLogin) {flag = true;}
+    snprintf(order, 256, 
+    "SELECT username, password FROM user WHERE username='%s' LIMIT 1",
+    name.c_str());
+    LOG_DEBUG("Run MYSQL: %s", order);
+
+    if (mysql_query(sql, order)) {
+        // 查询失败
+        mysql_free_result(res);
+        return false;
+    }
+    res = mysql_store_result(sql);
+
+    while (MYSQL_ROW row = mysql_fetch_row(res)) {
+        LOG_DEBUG("Read MYSQL ROW: %s %s", row[0], row[1]);
+        std::string password(row[1]);
+
+        if (isLogin) {
+            if (pwd == password) {flag = true;}
+            else {
+                flag = false;
+                LOG_DEBUG("Read MYSQL: pwd error!");
+            }
+        }
+        else {
+            flag = false;
+            LOG_DEBUG("Read MYSQL: user used!");
+        }
+    }
+    mysql_free_result(res);
+
+    if (!isLogin && flag == true) {
+        LOG_DEBUG("Write MYSQL: user regirster!");
+        bzero(order, 256);
+        snprintf(order, 256,
+         "INSERT INTO user(username, password) VALUES('%s','%s')",
+         name.c_str(), pwd.c_str());
+        LOG_DEBUG("Run MYSQL: %s", order);
+        if (mysql_query(sql, order)) {
+            LOG_DEBUG("Write MYSQL error!");
+            flag = false;
+        }
+        flag = true;
+    }
+    SqlConnPool::Instance()->freeConn(sql);
+    LOG_DEBUG( "Read MYSQL: UserVerify success!");
+    return flag;
 }
 
 /*16进制 -> 10进制*/

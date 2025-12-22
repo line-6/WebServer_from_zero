@@ -30,7 +30,7 @@ HttpRequest类 负责解析 HTTP 请求：
        │             │ 遇到空行（\r\n）
        │             ↓
 Buffer │       ┌─────────────┐
-only   │       │    BODY     │ ←─── 解析请求体（如果有）
+only:  │       │    BODY     │ ←─── 解析请求体（如果有）
 /r/n   │       └──────┬──────┘
        │              │ ParseBody_()
        │              ↓
