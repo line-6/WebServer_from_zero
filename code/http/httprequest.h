@@ -42,6 +42,7 @@ public:
 
     // TODO
     std::string path() const {return path_;}
+    std::string& path() {return path_;}
     std::string method() const {return method_;}
     std::string version() const {return version_;}
     std::string GetPost(const std::string& key) const;

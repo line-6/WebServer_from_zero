@@ -46,7 +46,14 @@ HttpResponse::~HttpResponse() {
 
 void HttpResponse::init(const std::string& srcDir, std::string& path, 
         bool isKeepAlive, int code) {
-    
+    assert(srcDir != "");
+    if(mmFile_) { unmapFile(); }
+    code_ = code;
+    isKeepAlive_ = isKeepAlive;
+    path_ = path;
+    srcDir_ = srcDir;
+    mmFile_ = nullptr; 
+    mmFileStat_ = { 0 };
 }
 
 void HttpResponse::makeResponse(Buffer& buffer) {
