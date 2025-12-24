@@ -19,12 +19,23 @@ public:
 
     void makeResponse(Buffer& buffer);
 
+    void unmapFile();
+    
+    char* file() { return mmFile_; }
+    size_t fileLen() const { return mmFileStat_.st_size; }
+
+    void errorContent(Buffer& buffer, std::string message);
+
+    int code() const { return code_; }
+
 
 private:
     void errorHtml_();
     void addStateLine_(Buffer& buffer);
     void addHeader_(Buffer& buffer);
     void addContent_(Buffer& buffer);
+
+    std::string getFileType_();
 
     int code_; // HTTP状态码
     bool isKeepAlive_;  // 是否保持连接

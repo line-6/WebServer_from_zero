@@ -1,4 +1,5 @@
 #include "httpresponse.h"
+#include <sys/mman.h>
 
 const std::unordered_map<std::string, std::string> HttpResponse::SUFFIX_TYPE = {
     { ".html",  "text/html" },
@@ -40,7 +41,7 @@ HttpResponse::HttpResponse(): code_(-1), isKeepAlive_(false), path_(""),
                             mmFileStat_({0}) {}
 
 HttpResponse::~HttpResponse() {
-
+    unmapFile();
 }
 
 void HttpResponse::init(const std::string& srcDir, std::string& path, 
@@ -67,14 +68,90 @@ void HttpResponse::makeResponse(Buffer& buffer) {
     addContent_(buffer);
 }
 
-void HttpResponse::addStateLine_(Buffer& buffer) {
+void HttpResponse::unmapFile() {
+    if (mmFile_) {
+        munmap(mmFile_, mmFileStat_.st_size);
+        mmFile_ = nullptr;
+    }
+}
 
+void HttpResponse::errorContent(Buffer& buffer, std::string message) {
+    std::string body;
+    std::string status;
+    body += "<html><title>Error</title>";
+    body += "<body bgcolor=\"ffffff\">";
+    if(CODE_STATUS.count(code_) == 1) {
+        status = CODE_STATUS.find(code_)->second;
+    } else {
+        status = "Bad Request";
+    }
+    body += std::to_string(code_) + " : " + status  + "\n";
+    body += "<p>" + message + "</p>";
+    body += "<hr><em>WebServer_from_zero</em></body></html>";
+
+    buffer.Append("Content-length: " + std::to_string(body.size()) + "\r\n\r\n");
+    buffer.Append(body);
+}
+
+void HttpResponse::errorHtml_() {
+    if(CODE_PATH.count(code_) == 1) {
+        path_ = CODE_PATH.find(code_)->second;
+        stat((srcDir_ + path_).data(), &mmFileStat_);
+    }
+}
+
+void HttpResponse::addStateLine_(Buffer& buffer) {
+    std::string status;
+    if(CODE_STATUS.count(code_) == 1) {
+        status = CODE_STATUS.find(code_)->second;
+    }
+    else {
+        code_ = 400;
+        status = CODE_STATUS.find(code_)->second;
+    }
+    buffer.Append("HTTP/1.1 " + std::to_string(code_) + " " + status + "\r\n");
 }
 
 void HttpResponse::addHeader_(Buffer& buffer) {
-
+    buffer.Append("Connection: ");
+    if (isKeepAlive_) {
+        buffer.Append("keep-alive\r\n");
+        buffer.Append("keep-alive: max=6, timeout=120\r\n");
+    }
+    else {
+        buffer.Append("close\r\n");
+    }
+    buffer.Append("Content-type: " + getFileType_() + "\r\n");
 }
 
 void HttpResponse::addContent_(Buffer& buffer) {
-    
+    int srcFd = open((srcDir_ + path_).data(), O_RDONLY);
+    if (srcFd < 0) {
+        errorContent(buffer, "File Not Found!");
+        return;
+    }
+    LOG_DEBUG("file path %s", (srcDir_ + path_).data());
+
+    void* mmRet = mmap(NULL, mmFileStat_.st_size, PROT_READ,
+                MAP_PRIVATE, srcFd, 0);
+    if (mmRet == MAP_FAILED) {
+        errorContent(buffer, "File Not Found!");
+        return;
+    }
+    mmFile_ = (char*)mmRet;
+    close(srcFd);
+    buffer.Append("Content-length: " + std::to_string(mmFileStat_.st_size) + "\r\n\r\n");
+}
+
+std::string HttpResponse::getFileType_() {
+    // 判断文件类型
+    std::string::size_type idx = path_.find_last_of('.');
+    if (idx == std::string::npos) {
+        return "text/plain";
+    }
+    std::string suffix = path_.substr(idx);
+    if(SUFFIX_TYPE.count(suffix) == 1) {
+        return SUFFIX_TYPE.find(suffix)->second;
+    }
+    return "text/plain";
 }
