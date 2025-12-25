@@ -68,3 +68,11 @@ make
 
 ### Step 6.WebServer 主逻辑
 code/server/webserver
+
+## TODO
+1. 模拟Proactor的模型实现
+
+## 核心参考
+1. https://github.com/qinguoyi/TinyWebServer  
+2. https://github.com/markparticle/WebServer  
+3. 《Linux高性能服务器编程》，游双著
