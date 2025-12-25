@@ -43,6 +43,7 @@ void HeapTimer::clear() {
     heap_.clear();
 }
 
+// 时间节点走一拍
 void HeapTimer::tick() {
     if(heap_.empty()) {
         return;
@@ -62,6 +63,7 @@ void HeapTimer::pop() {
     del_(0);
 }
 
+// 触发下一次节点超时还需的时间(ms)
 int HeapTimer::getNextTick() {
     tick();
     size_t res = -1;
