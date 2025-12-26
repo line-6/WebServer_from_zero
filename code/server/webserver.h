@@ -30,6 +30,21 @@ private:
 
     bool initSocket_();
 
+    void dealListen_();
+    void dealDisconnect_(HttpConn* client);
+    void dealRead_(HttpConn* client);
+    void dealWrite_(HttpConn* client);
+
+    void onRead_(HttpConn* client);
+    void onWrite_(HttpConn* client);
+    void onProcess(HttpConn* client);
+
+    void addClient_(int fd, struct sockaddr_in clientAddr);
+
+    void sendError_(int fd, const std::string& message);
+
+    void extendTime_(HttpConn* client);
+
     static const int MAX_FD = 65536;
 
     int port_;
@@ -45,5 +60,5 @@ private:
     std::unique_ptr<HeapTimer> timer_;
     std::unique_ptr<ThreadPool> threadpool_;
     std::unique_ptr<Epoller> epoller_;
-    std::unordered_map<int, HttpConn> user_;
+    std::unordered_map<int, HttpConn> users_;    // [fd, conn]
 };

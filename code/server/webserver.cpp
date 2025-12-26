@@ -1,13 +1,5 @@
 #include "webserver.h"
-#include "http/httpconn.h"
-#include "pool/sqlconnpool.h"
-#include "pool/threadpool.h"
-#include "server/epoller.h"
-#include <cassert>
-#include <memory>
-#include <netinet/in.h>
-#include <sys/epoll.h>
-#include <sys/socket.h>
+
 
 WebServer::WebServer(int port, int mode, int timeoutMs, bool optLinger,
         int sqlPort, const char* sqlUser, const char* sqlPwd, const char* dbName,
@@ -65,18 +57,26 @@ void WebServer::start() {
             uint32_t events = epoller_->getEvents(i);
             if (fd == listenFd_) {
                 // 新连接事件
+                dealListen_();
             }
             else if (events & (EPOLLRDHUP | EPOLLHUP | EPOLLERR)) {
                 // 断连事件
+                assert(users_.count(fd) > 0);
+                dealDisconnect_(&users_[fd]);
             }
             else if (events & EPOLLIN) {
                 // 输入事件
+                assert(users_.count(fd) > 0);
+                dealRead_(&users_[fd]);
             }
             else if (events & EPOLLOUT) {
                 // 写出事件
+                assert(users_.count(fd) > 0);
+                dealWrite_(&users_[fd]);
             }
             else {
                 // UB
+                LOG_ERROR("Unexpected event!");
             }
         }
     }
@@ -178,4 +178,103 @@ void WebServer::initEventModel_(int mode) {
             break;
     }
     HttpConn::isET = (connEvent_ & EPOLLET);
+}
+
+void WebServer::dealListen_() {
+    struct sockaddr_in clientAddr;
+    socklen_t addrLen = sizeof(clientAddr);
+    do {
+        int fd = accept(listenFd_, (sockaddr*)&clientAddr, &addrLen);
+        if (fd < 0) return;
+        else if (HttpConn::userCount >= MAX_FD) {
+            sendError_(fd, "Server is busy!");
+            LOG_WARN("Server is full!");
+            return;
+        }
+        addClient_(fd, clientAddr);
+    } while (listenEvent_ & EPOLLET);   // why
+}
+
+void WebServer::dealDisconnect_(HttpConn* client) {
+    assert(client);
+    LOG_INFO("Client[%d] quit!", client->getFd());
+    epoller_->delFd(client->getFd());
+    client->closeConn();
+}
+
+void WebServer::dealRead_(HttpConn* client) {
+    assert(client);
+    extendTime_(client);
+    threadpool_->addTask(std::bind(&WebServer::onRead_, this, client));
+}
+
+void WebServer::dealWrite_(HttpConn* client) {
+    assert(client);
+    extendTime_(client);
+    threadpool_->addTask(std::bind(&WebServer::onWrite_, this, client));
+}
+
+void WebServer::onRead_(HttpConn* client) {
+    assert(client);
+    int ret = -1;
+    int readErrno = 0;
+    ret = client->read(&readErrno);
+    if (ret <= 0 && readErrno != EAGAIN) {
+        dealDisconnect_(client);
+        return;
+    }
+    onProcess(client);
+
+}
+
+void WebServer::onWrite_(HttpConn* client) {
+    assert(client);
+    int ret = -1;
+    int writeErrno = 0;
+    ret = client->write(&writeErrno);
+    if (client->toWriteBytes() == 0) {
+        if (client->isKeepAlive()) {
+            onProcess(client);
+            return;
+        }
+    }
+    else if (ret < 0) {
+        if (writeErrno == EAGAIN) {
+            epoller_->modFd(client->getFd(), connEvent_ | EPOLLOUT);
+            return;
+        }
+    }
+    dealDisconnect_(client);
+}
+
+void WebServer::onProcess(HttpConn* client) {
+    if (client->process()) {
+        epoller_->modFd(client->getFd(), connEvent_ | EPOLLOUT);
+    }
+    else {
+        epoller_->modFd(client->getFd(), connEvent_ | EPOLLIN);
+    }
+}
+
+void WebServer::addClient_(int fd, struct sockaddr_in clientAddr) {
+    assert(fd > 0);
+    users_[fd].initConn(fd, clientAddr);
+    if (timeoutMs_ > 0) {
+        timer_->add(fd, timeoutMs_,
+            std::bind(&WebServer::dealDisconnect_, this, &users_[fd]));
+    }
+    epoller_->addFd(fd, connEvent_ | EPOLLIN);
+    setFdNonBlock(fd);
+    LOG_INFO("Client[%d] in!", users_[fd].getFd());
+}
+
+void WebServer::sendError_(int fd, const std::string& message) {
+
+}
+
+void WebServer::extendTime_(HttpConn* client) {
+    assert(client);
+    if (timeoutMs_ > 0) {
+        timer_->adjust(client->getFd(), timeoutMs_);
+    }
 }

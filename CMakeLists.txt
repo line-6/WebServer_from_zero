@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 project(WebServer_from_zero)
 
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -pthread -Wall -O2")
 
 set(CMAKE_EXPORT_COMPILECOMMANDS ON)
@@ -38,8 +39,16 @@ add_executable(test_timer
     code/timer/heaptimer.cpp
 )
 
-# --- 最终目标 (暂时注释，待后续阶段开启) ---
-# file(GLOB_RECURSE SRC_FILES code/*.cpp)
-# add_executable(server ${SRC_FILES})
-# target_link_libraries(server mysqlclient)
+# --- 最终目标
+file(GLOB_RECURSE SRC_FILES
+    code/log/*.cpp
+    code/pool/*.cpp
+    code/timer/*.cpp
+    code/http/*.cpp
+    code/server/*.cpp
+    code/buffer/*.cpp
+    code/main.cpp
+)
+add_executable(server ${SRC_FILES})
+target_link_libraries(server pthread mysqlclient)
 
