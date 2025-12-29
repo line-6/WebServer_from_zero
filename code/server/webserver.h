@@ -41,7 +41,7 @@ private:
 
     void addClient_(int fd, struct sockaddr_in clientAddr);
 
-    void sendError_(int fd, const std::string& message);
+    void sendError_(int fd, const char* message);
 
     void extendTime_(HttpConn* client);
 

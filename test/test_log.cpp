@@ -34,15 +34,15 @@ std::string ReadFile(const std::string& path) {
 void TestSyncMode() {
     std::cout << "\n========== 测试1: 同步模式 ==========" << std::endl;
     
-    Log::Instance()->init(0, "./test_logs/sync", ".log", 0);  // maxQueueSize = 0 表示同步模式
-    assert(Log::Instance()->IsOpen());
+    Log::Instance().init(0, "./test_logs/sync", ".log", 0);  // maxQueueSize = 0 表示同步模式
+    assert(Log::Instance().IsOpen());
     
     LOG_DEBUG("This is a debug message in sync mode");
     LOG_INFO("This is an info message in sync mode");
     LOG_WARN("This is a warn message in sync mode");
     LOG_ERROR("This is an error message in sync mode");
     
-    Log::Instance()->flush();
+    Log::Instance().flush();
     std::cout << "同步模式测试完成" << std::endl;
 }
 
@@ -50,8 +50,8 @@ void TestSyncMode() {
 void TestAsyncMode() {
     std::cout << "\n========== 测试2: 异步模式 ==========" << std::endl;
     
-    Log::Instance()->init(0, "./test_logs/async", ".log", 1000);  // maxQueueSize > 0 表示异步模式
-    assert(Log::Instance()->IsOpen());
+    Log::Instance().init(0, "./test_logs/async", ".log", 1000);  // maxQueueSize > 0 表示异步模式
+    assert(Log::Instance().IsOpen());
     
     // 写入大量日志，测试异步性能
     for (int i = 0; i < 100; i++) {
@@ -60,7 +60,7 @@ void TestAsyncMode() {
     
     // 等待队列中的日志被写入
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    Log::Instance()->flush();
+    Log::Instance().flush();
     
     std::cout << "异步模式测试完成" << std::endl;
 }
@@ -70,16 +70,16 @@ void TestLogLevel() {
     std::cout << "\n========== 测试3: 日志级别过滤 ==========" << std::endl;
     
     // 设置日志级别为 INFO (1)，DEBUG (0) 应该被过滤
-    Log::Instance()->init(1, "./test_logs/level", ".log", 0);
-    Log::Instance()->SetLevel(1);
-    assert(Log::Instance()->GetLevel() == 1);
+    Log::Instance().init(1, "./test_logs/level", ".log", 0);
+    Log::Instance().SetLevel(1);
+    assert(Log::Instance().GetLevel() == 1);
     
     LOG_DEBUG("This DEBUG message should NOT appear");
     LOG_INFO("This INFO message should appear");
     LOG_WARN("This WARN message should appear");
     LOG_ERROR("This ERROR message should appear");
     
-    Log::Instance()->flush();
+    Log::Instance().flush();
     std::cout << "日志级别过滤测试完成（请检查日志文件确认 DEBUG 消息被过滤）" << std::endl;
 }
 
@@ -87,14 +87,14 @@ void TestLogLevel() {
 void TestFileManagement() {
     std::cout << "\n========== 测试4: 文件管理 ==========" << std::endl;
     
-    Log::Instance()->init(0, "./test_logs/file_mgmt", ".log", 0);
+    Log::Instance().init(0, "./test_logs/file_mgmt", ".log", 0);
     
     // 写入一些日志
     for (int i = 0; i < 10; i++) {
         LOG_INFO("File management test message %d", i);
     }
     
-    Log::Instance()->flush();
+    Log::Instance().flush();
     
     // 检查文件是否创建（文件名格式：YYYY_MM_DD.log）
     time_t now = time(nullptr);
@@ -120,7 +120,7 @@ void TestFileManagement() {
 void TestMultiThread() {
     std::cout << "\n========== 测试5: 多线程并发 ==========" << std::endl;
     
-    Log::Instance()->init(0, "./test_logs/multithread", ".log", 1000);  // 异步模式
+    Log::Instance().init(0, "./test_logs/multithread", ".log", 1000);  // 异步模式
     
     const int numThreads = 5;
     const int logsPerThread = 20;
@@ -142,7 +142,7 @@ void TestMultiThread() {
     
     // 等待队列中的日志被写入
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    Log::Instance()->flush();
+    Log::Instance().flush();
     
     std::cout << "多线程并发测试完成（" << numThreads << " 个线程，每个写入 " 
               << logsPerThread << " 条日志）" << std::endl;
@@ -236,7 +236,7 @@ void TestBlockDequeBlocking() {
 void TestLogFormatting() {
     std::cout << "\n========== 测试8: 日志格式化 ==========" << std::endl;
     
-    Log::Instance()->init(0, "./test_logs/format", ".log", 0);
+    Log::Instance().init(0, "./test_logs/format", ".log", 0);
     
     int userId = 12345;
     const char* username = "Alice";
@@ -246,7 +246,7 @@ void TestLogFormatting() {
     LOG_WARN("Warning: User %d attempted invalid operation", userId);
     LOG_ERROR("Error: Failed to process request for user %s", username);
     
-    Log::Instance()->flush();
+    Log::Instance().flush();
     std::cout << "日志格式化测试完成" << std::endl;
 }
 
@@ -254,27 +254,27 @@ void TestLogFormatting() {
 void TestDynamicLevelChange() {
     std::cout << "\n========== 测试9: 动态切换日志级别 ==========" << std::endl;
     
-    Log::Instance()->init(0, "./test_logs/dynamic", ".log", 0);
+    Log::Instance().init(0, "./test_logs/dynamic", ".log", 0);
     
     // 初始级别：DEBUG (0)，所有日志都应该显示
-    Log::Instance()->SetLevel(0);
+    Log::Instance().SetLevel(0);
     LOG_DEBUG("This should appear (level 0)");
     LOG_INFO("This should appear (level 1)");
     
     // 切换到 INFO (1)，DEBUG 应该被过滤
-    Log::Instance()->SetLevel(1);
+    Log::Instance().SetLevel(1);
     LOG_DEBUG("This should NOT appear (level 0, filtered)");
     LOG_INFO("This should appear (level 1)");
     LOG_WARN("This should appear (level 2)");
     
     // 切换到 ERROR (3)，只有 ERROR 显示
-    Log::Instance()->SetLevel(3);
+    Log::Instance().SetLevel(3);
     LOG_DEBUG("This should NOT appear");
     LOG_INFO("This should NOT appear");
     LOG_WARN("This should NOT appear");
     LOG_ERROR("This should appear (level 3)");
     
-    Log::Instance()->flush();
+    Log::Instance().flush();
     std::cout << "动态切换日志级别测试完成" << std::endl;
 }
 

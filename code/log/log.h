@@ -22,7 +22,7 @@ class Log {
 private:
     Log();
     virtual ~Log();
-
+    
     void AppendLogLevelTitle(int level);
     void AsyncWrite();
 
@@ -31,7 +31,7 @@ public:
                 const char* suffix = ".log", 
                 int maxQueueCapacity = 1024);
 
-    static Log* Instance();
+    static Log& Instance();
     static void FlushLogThread();
 
     void write(int level, const char* format, ...);
@@ -65,14 +65,14 @@ private:
     std::unique_ptr<BlockDeque<std::string>> deque_;
     std::unique_ptr<std::thread> writeThread_;  // 后台写线程
     std::mutex mtx_;
-}; 
+};
 
 #define LOG_BASE(level, format, ...) \
     do {\
-        Log* log = Log::Instance();\
-        if (log->IsOpen() && log->GetLevel() <= level) {\
-            log->write(level, format, ##__VA_ARGS__); \
-            log->flush();\
+        Log& log = Log::Instance();\
+        if (log.IsOpen() && log.GetLevel() <= level) {\
+            log.write(level, format, ##__VA_ARGS__); \
+            log.flush();\
         }\
     } while(0);
 

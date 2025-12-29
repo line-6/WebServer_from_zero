@@ -5,6 +5,7 @@
 #include <mutex>
 
 Log::Log() {
+    //std::cout << "Log Constructed!" << std::endl;
     lineCount_ = 0;
     isAsync_ = false;
     writeThread_ = nullptr;
@@ -40,7 +41,7 @@ void Log::SetLevel(int level) {
 
 void Log::init(int level = 1, const char* path, const char* suffix, int maxQueueCapacity) {
     isOpen_ = true;
-    level = level_;
+    level_ = level;
     if (maxQueueCapacity > 0) {
         isAsync_ = true;
         if (!deque_) {
@@ -123,7 +124,7 @@ void Log::write(int level, const char *format, ...) {
     {
         std::lock_guard<std::mutex> locker(mtx_);
         lineCount_++;
-        // YYYY-MM-DD HH:MM:SS.uuuuuu (精确的微秒)
+        // YYYY-MM-DD HH:MM:SS.uuuuuu (精确到微秒)
         // e.g.: 2025-12-14 15:42:10.267310
         int n = snprintf(buff_.WritePtr(), 128, "%d-%02d-%02d %02d:%02d:%02d.%06ld ",
                     t.tm_year + 1900, t.tm_mon + 1, t.tm_mday,
@@ -156,16 +157,16 @@ void Log::AppendLogLevelTitle(int level) {
             buff_.Append("[debug]: ", 9);
             break;
         case 1:
-            buff_.Append("[info]: ", 9);
+            buff_.Append("[info] : ", 9);
             break;
         case 2:
-            buff_.Append("[warn]: ", 9);
+            buff_.Append("[warn] : ", 9);
             break;
         case 3:
             buff_.Append("[error]: ", 9);
             break;
         default:
-            buff_.Append("[debug]: ", 9);
+            buff_.Append("[info] : ", 9);
             break;
     }
 }
@@ -182,14 +183,15 @@ void Log::AsyncWrite() {
     while(deque_->pop(str)) {
         std::lock_guard<std::mutex> locker(mtx_);
         fputs(str.c_str(), fp_);
+        //fflush(fp_);
     }
 }
 
-Log* Log::Instance() {
+Log& Log::Instance() {
     static Log instance;
-    return &instance;
+    return instance;
 }
 
 void Log::FlushLogThread() {
-    Log::Instance()->AsyncWrite();
+    Log::Instance().AsyncWrite();
 }

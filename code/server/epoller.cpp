@@ -1,5 +1,5 @@
 #include "epoller.h"
-#include <sys/epoll.h>
+#include <iostream>
 
 Epoller::Epoller(int maxEvent): epollFd_(epoll_create(1024)),
                              events_(maxEvent) {
@@ -11,6 +11,7 @@ Epoller::~Epoller() {
 }
 
 bool Epoller::addFd(int fd, uint32_t events) {
+    //std::cout << "DEBUG: events = " << events << std::endl;
     if (fd < 0) return false;
     epoll_event ev = {0};
     ev.events = events;

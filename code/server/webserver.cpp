@@ -11,16 +11,16 @@ WebServer::WebServer(int port, int mode, int timeoutMs, bool optLinger,
         epoller_(std::make_unique<Epoller>())  {
     srcDir_ = getcwd(nullptr, 256);
     assert(srcDir_);
-    strncat(srcDir_, "../../resources", 20);
+    strncat(srcDir_, "/../../resources", 20);
     HttpConn::userCount = 0;
     HttpConn::srcDir = srcDir_;
-    SqlConnPool::Instance()->init("localhost", port, sqlUser, 
+    SqlConnPool::Instance()->init("localhost", sqlPort, sqlUser, 
     sqlPwd, dbName, connPoolSize);
     initEventModel_(mode);
     if (!initSocket_()) { isClose_ = true; }
 
     if (openLog) {
-        Log::Instance()->init(logLevel, "./log", ".log", logQueueSize);
+        Log::Instance().init(logLevel, "./log", ".log", logQueueSize);
         if(isClose_) { LOG_ERROR("========== Server init error!=========="); }
         else {
             LOG_INFO("========== Server init ==========");
@@ -84,7 +84,9 @@ void WebServer::start() {
 
 int WebServer::setFdNonBlock(int fd) {
     assert(fd > 0);
-    return fcntl(fd, F_SETFL, fcntl(fd, F_GETFD, 0) | O_NONBLOCK);
+    int oldOpt = fcntl(fd, F_GETFL);
+    assert(oldOpt >= 0);
+    return fcntl(fd, F_SETFL, oldOpt | O_NONBLOCK);
 }
 
 /* Create listen fd*/
@@ -98,7 +100,7 @@ bool WebServer::initSocket_() {
     }
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    addr.sin_port = htonl(port_);
+    addr.sin_port = htons(port_);   // htons和htonl不能用混！发生过bug！
 
     struct linger optLinger = {0};
     if (openLinger_) {
@@ -145,7 +147,7 @@ bool WebServer::initSocket_() {
         close(listenFd_);
         return false;
     }
-
+    //std::cout << "DEBUG: listenEvent_ = " << listenEvent_ << std::endl;
     ret = epoller_->addFd(listenFd_, listenEvent_ | EPOLLIN);
     if(ret == 0) {
         LOG_ERROR("Add listen fd error!");
@@ -268,8 +270,13 @@ void WebServer::addClient_(int fd, struct sockaddr_in clientAddr) {
     LOG_INFO("Client[%d] in!", users_[fd].getFd());
 }
 
-void WebServer::sendError_(int fd, const std::string& message) {
-
+void WebServer::sendError_(int fd, const char* message) {
+    assert(fd > 0);
+    int ret = send(fd, message, strlen(message), 0);
+    if(ret < 0) {
+        LOG_WARN("send error to client[%d] error!", fd);
+    }
+    close(fd);
 }
 
 void WebServer::extendTime_(HttpConn* client) {
