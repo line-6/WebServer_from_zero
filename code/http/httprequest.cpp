@@ -4,8 +4,8 @@
 #include <mysql/mysql.h>
 
 const std::unordered_set<std::string> HttpRequest::DEFAULT_HTML{
-    "/index", "/register", "/login", "welcome",
-    "/video", "picture",
+    "/index", "/register", "/login", "/welcome",
+    "/video", "/picture",
 };
 
 const std::unordered_map<std::string, int> HttpRequest::DEFAULT_HTML_TAG {

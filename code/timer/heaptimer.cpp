@@ -63,7 +63,7 @@ void HeapTimer::pop() {
     del_(0);
 }
 
-// 触发下一次节点超时还需的时间(ms)
+// 清除所有超时节点，返回触发下一次节点超时还需的时间(ms)
 int HeapTimer::getNextTick() {
     tick();
     size_t res = -1;
